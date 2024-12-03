@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>圖片顏色分析工具</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 20px;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+    a {
+      color: blue;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>圖片顏色分析工具</h1>
+  <input type="file" id="imageInput" accept="image/*">
+  <canvas id="canvas" style="display: none;"></canvas>
+  <div id="result"></div>
+
+  <script>
+    document.getElementById('imageInput').addEventListener('change', function (event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const img = new Image();
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      const resultDiv = document.getElementById('result');
+
+      img.onload = function () {
+        // 將圖片繪製到畫布
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        // 提取像素數據
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+
+        let yellowCount = 0, greenCount = 0, blueCount = 0, totalPixels = 0;
+
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];     // 紅色通道
+          const g = data[i + 1]; // 綠色通道
+          const b = data[i + 2]; // 藍色通道
+
+          // 判斷是否為黃色（紅和綠高，藍低）
+          if (r > 200 && g > 200 && b < 150) {
+            yellowCount++;
+          }
+          // 判斷是否為綠色（綠色值高，紅和藍低）
+          else if (g > 200 && r < 150 && b < 150) {
+            greenCount++;
+          }
+          // 判斷是否為藍色（藍色值高，紅和綠低）
+          else if (b > 200 && r < 150 && g < 150) {
+            blueCount++;
+          }
+
+          totalPixels++;
+        }
+
+        // 計算各顏色占比
+        const yellowRatio = (yellowCount / totalPixels) * 100;
+        const greenRatio = (greenCount / totalPixels) * 100;
+        const blueRatio = (blueCount / totalPixels) * 100;
+
+        // 分析結果並顯示
+        if (yellowRatio > greenRatio && yellowRatio > blueRatio) {
+          resultDiv.innerHTML = '檢測無誤 (圖片中黃色較多)';
+          resultDiv.style.color = 'black';
+          resultDiv.style.fontWeight = 'normal';
+        } else if (greenRatio > yellowRatio && greenRatio > blueRatio) {
+          resultDiv.innerHTML = `
+            <span class="error">Item list被清除，請參考以下網站作出更正：</span><br>
+            <a href="https://example.com/green-fix" target="_blank">https://example.com/green-fix</a>
+          `;
+        } else if (blueRatio > yellowRatio && blueRatio > greenRatio) {
+          resultDiv.innerHTML = `
+            <span class="error">Door has been locked<br>請參考以下網頁作出更正：</span><br>
+            <a href="https://example.com/blue-fix" target="_blank">https://example.com/blue-fix</a>
+          `;
+        } else {
+          resultDiv.innerHTML = '圖片中無法檢測到主要顏色。';
+          resultDiv.style.color = 'black';
+          resultDiv.style.fontWeight = 'normal';
+        }
+      };
+
+      img.src = URL.createObjectURL(file);
+    });
+  </script>
+</body>
+</html>
